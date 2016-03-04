@@ -78,7 +78,7 @@
         android:textStyle="bold"
         android:layout_marginTop="21dp"
         android:layout_below="@+id/Status_2"
-        android:layout_alignEnd="@+id/MAC_2" />
+        android:layout_toStartOf="@+id/MAC_2" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -145,7 +145,8 @@
         android:layout_centerVertical="true"
         android:layout_alignParentStart="true"
         android:layout_marginTop="20dp"
-        android:layout_below="@+id/Status_4" />
+        android:layout_below="@+id/Status_4"
+        android:layout_toStartOf="@+id/MAC_4" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -174,10 +175,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/Status_5"
-        android:layout_toEndOf="@+id/Status_5"
         android:layout_marginTop="23dp"
         android:orientation="horizontal"
-        android:id="@+id/radioGroup">
+        android:id="@+id/radioGroup"
+        android:layout_alignLeft="@+id/btn_connect">
 
         <RadioButton
             android:layout_width="0dp"
@@ -216,7 +217,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Frequency"
+        android:text="Freq(Hz)"
         android:id="@+id/label_Hz"
         android:textSize="16dp"
         android:layout_alignParentStart="true"

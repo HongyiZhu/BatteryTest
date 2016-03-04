@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -19,12 +20,17 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 public class MainActivity extends AppCompatActivity{
     private MyReceiver broadcastreceiver;
     SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, HH:mm:ss");
+    private String path;
+    private String logfilename;
 
     public class MyReceiver extends BroadcastReceiver {
         private String lb_MAC = "MAC";
@@ -73,6 +79,20 @@ public class MainActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Create a log file
+        Calendar day_time = new GregorianCalendar();
+        int year = day_time.get(GregorianCalendar.YEAR);
+        int month = day_time.get(GregorianCalendar.MONTH) + 1;
+        int day = day_time.get(GregorianCalendar.DAY_OF_MONTH);
+        int hour = day_time.get(GregorianCalendar.HOUR_OF_DAY);
+        int minute = day_time.get(GregorianCalendar.MINUTE);
+        int second = day_time.get(GregorianCalendar.SECOND);
+        logfilename = year + "-" + month + "-" + day + "_" + hour + "_" + minute + "_" + second + ".csv";
+        path = Environment.getExternalStorageDirectory().getAbsolutePath();
+        File logfile = new File(path, logfilename);
+        logfile.setReadable(true);
+        logfile.setReadable(true);
 
         // Assign handlers for the two buttons
         Button btn_connect = (Button) findViewById(R.id.btn_connect);
@@ -145,6 +165,7 @@ public class MainActivity extends AppCompatActivity{
                 Intent service = new Intent(MainActivity.this, ForegroundService.class);
                 service.putExtra("lst_MAC", selectedMAC);
                 service.putExtra("frequency", frequency);
+                service.putExtra("file", path+"/"+logfilename);
                 if (!ForegroundService.IS_SERVICE_RUNNING) {
                     service.setAction(Constants.ACTION.STARTFOREGROUND_ACTION);
                     ForegroundService.IS_SERVICE_RUNNING = true;

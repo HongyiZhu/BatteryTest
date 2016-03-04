@@ -52,6 +52,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -78,7 +81,9 @@ public class ForegroundService extends Service implements ServiceConnection{
     private ArrayList<ScanFilter> api21ScanFilters;
     private final static UUID[] serviceUuids;
     private float frequency = 0;
-    private String log_file_name;
+    private BufferedWriter bw;
+    private MyReceiver broadcastReceiver;
+    private MetaWearBleService.LocalBinder serviceBinder;
 
     public static boolean IS_SERVICE_RUNNING = false;
 
@@ -116,10 +121,24 @@ public class ForegroundService extends Service implements ServiceConnection{
         }
     }
 
+    private void writeLog(long TS, String sbj, String label, String devicename, int x, int y, int z) {
+
+        try {
+            String s = String.valueOf(TS) + "," + sbj + "," + label + "," + devicename + "," +
+                    String.valueOf(x) + "," + String.valueOf(y) + "," + String.valueOf(z);
+            bw.write(s);
+            bw.newLine();
+            bw.flush();
+            Log.i("data",s);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
-        MyReceiver broadcastReceiver = new MyReceiver();
+        broadcastReceiver = new MyReceiver();
         IntentFilter intentfilter = new IntentFilter();
         intentfilter.addAction(Constants.NOTIFICATION_ID.LABEL_TAG);
         registerReceiver(broadcastReceiver, intentfilter);
@@ -138,7 +157,13 @@ public class ForegroundService extends Service implements ServiceConnection{
                 SENSOR_MAC.add(MAC);
             }
             if (intent.hasExtra("file")) {
-                this.log_file_name = intent.getStringExtra("file");
+                String log_file_name = intent.getStringExtra("file");
+                File logfile = new File(log_file_name);
+                try {
+                    this.bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(logfile, true)));
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         } else if (intent.getAction().equals(
                 Constants.ACTION.STOPFOREGROUND_ACTION)) {
@@ -176,6 +201,14 @@ public class ForegroundService extends Service implements ServiceConnection{
 
     @Override
     public void onDestroy() {
+        unregisterReceiver(broadcastReceiver);
+        try {
+            if (bw != null) {
+                bw.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         for (int i = 0; i < SENSOR_MAC.size(); i++) {
             boards.get(i).accel_module.stop();
             boards.get(i).accel_module.disableAxisSampling();
@@ -299,7 +332,7 @@ public class ForegroundService extends Service implements ServiceConnection{
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        MetaWearBleService.LocalBinder serviceBinder = (MetaWearBleService.LocalBinder) service;
+        serviceBinder = (MetaWearBleService.LocalBinder) service;
 
         btAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
@@ -347,13 +380,13 @@ public class ForegroundService extends Service implements ServiceConnection{
     }
 
     public class BoardObject {
-        private final String CONNECTED = "Connected.\nStreaming Data",
-                DISCONNECTED = "Lost connection.\nReconnecting",
-                FAILURE = "Connection error.\nReconnecting",
+        private final String CONNECTED = "Connected. Streaming Data",
+                DISCONNECTED = "Lost connection. Reconnecting",
+                FAILURE = "Connection error. Reconnecting",
                 CONNECTING = "Connecting",
                 LOG_TAG = "Board_Log";
         public MetaWearBoard board;
-        public Bmi160Accelerometer accel_module;
+        public Accelerometer accel_module;
         public String MAC_ADDRESS;
         private float sampleFreq;
         private float sampleInterval;
@@ -393,24 +426,8 @@ public class ForegroundService extends Service implements ServiceConnection{
                     sensor_status = CONNECTED;
                     broadcastStatus();
                     try {
-                        accel_module = board.getModule(Bmi160Accelerometer.class);
-                        if (sampleFreq == 12.5f) {
-                            accel_module.configureAxisSampling()
-                                    .setOutputDataRate(Bmi160Accelerometer.OutputDataRate.ODR_12_5_HZ)
-                                    .commit();
-                        } else if (sampleFreq == 25.0f) {
-                            accel_module.configureAxisSampling()
-                                    .setOutputDataRate(Bmi160Accelerometer.OutputDataRate.ODR_25_HZ)
-                                    .commit();
-                        } else if (sampleFreq == 50.0f) {
-                            accel_module.configureAxisSampling()
-                                    .setOutputDataRate(Bmi160Accelerometer.OutputDataRate.ODR_50_HZ)
-                                    .commit();
-                        } else if (sampleFreq == 100.0f) {
-                            accel_module.configureAxisSampling()
-                                    .setOutputDataRate(Bmi160Accelerometer.OutputDataRate.ODR_100_HZ)
-                                    .commit();
-                        }
+                        accel_module = board.getModule(Accelerometer.class);
+                        accel_module.setOutputDataRate(sampleFreq);
                         accel_module.routeData().fromAxes().stream(SENSOR_DATA_LOG).commit()
                                 .onComplete(new AsyncOperation.CompletionHandler<RouteManager>() {
                                     @Override
@@ -418,6 +435,7 @@ public class ForegroundService extends Service implements ServiceConnection{
                                         result.subscribe(SENSOR_DATA_LOG, new RouteManager.MessageHandler() {
                                             @Override
                                             public void process(Message message) {
+                                                long TS = System.currentTimeMillis();
                                                 CartesianFloat result = message.getData(CartesianFloat.class);
                                                 float x = result.x();
                                                 int x_int = (int) (x * 1000);
@@ -425,6 +443,7 @@ public class ForegroundService extends Service implements ServiceConnection{
                                                 int y_int = (int) (y * 1000);
                                                 float z = result.z();
                                                 int z_int = (int) (z * 1000);
+                                                writeLog(TS, subject, label, devicename, x_int, y_int, z_int);
                                             }
                                         });
                                     }
