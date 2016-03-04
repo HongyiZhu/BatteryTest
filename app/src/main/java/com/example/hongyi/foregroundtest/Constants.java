@@ -16,12 +16,14 @@ public class Constants {
     public interface NOTIFICATION_ID {
         public static int FOREGROUND_SERVICE = 101;
         public static String BROADCAST_TAG = "com.marothiatechs.foregroundservice.action.broadcast";
+        public static String LABEL_TAG = "com.marothiatechs.foregroundservice.action.broadcast.label";
     }
 
     public interface SENSORS {
-        public static String SENSOR1 = "DB:D1:AD:E3:E9:C3";
-        public static String SENSOR2 = "F2:50:71:B0:AE:E1";
-        public static String SENSOR3 = "DF:1C:5C:3F:F2:39";
-        public static String SENSOR4 = "D4:CC:1A:AE:D4:FB";
+        public static String SENSOR1 = "D2:02:B3:1C:D2:C3";
+        public static String SENSOR2 = "EB:0B:E2:6E:8C:52";
+        public static String SENSOR3 = "F7:FC:FF:D2:F1:66";
+        public static String SENSOR4 = "EE:9F:61:85:DA:6C";
+        public static String SENSOR5 = "E8:BD:10:7D:58:B4";
     }
 }
