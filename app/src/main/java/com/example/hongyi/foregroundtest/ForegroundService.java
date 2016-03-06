@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.UUID;
 
 public class ForegroundService extends Service implements ServiceConnection{
+    private int connected_count;
     private static final String LOG_TAG = "ForegroundService";
     private final ArrayList<String> SENSOR_MAC = new ArrayList<>();
     private final ArrayList<BoardObject> boards = new ArrayList<>();
@@ -119,6 +120,7 @@ public class ForegroundService extends Service implements ServiceConnection{
     @Override
     public void onCreate() {
         super.onCreate();
+        connected_count = 0;
         broadcastReceiver = new MyReceiver();
         IntentFilter intentfilter = new IntentFilter();
         intentfilter.addAction(Constants.NOTIFICATION_ID.LABEL_TAG);
@@ -405,6 +407,7 @@ public class ForegroundService extends Service implements ServiceConnection{
                 @Override
                 public void connected() {
                     sensor_status = CONNECTED;
+                    connected_count += 1;
                     broadcastStatus();
                     try {
                         accel_module = board.getModule(Accelerometer.class);
@@ -416,15 +419,17 @@ public class ForegroundService extends Service implements ServiceConnection{
                                         result.subscribe(SENSOR_DATA_LOG, new RouteManager.MessageHandler() {
                                             @Override
                                             public void process(Message message) {
-                                                long TS = System.currentTimeMillis();
-                                                CartesianFloat result = message.getData(CartesianFloat.class);
-                                                float x = result.x();
-                                                int x_int = (int) (x * 1000);
-                                                float y = result.y();
-                                                int y_int = (int) (y * 1000);
-                                                float z = result.z();
-                                                int z_int = (int) (z * 1000);
-                                                writeLog(TS, subject, label, devicename, sampleFreq, x_int, y_int, z_int);
+                                                if (connected_count >= SENSOR_MAC.size()) {
+                                                    long TS = System.currentTimeMillis();
+                                                    CartesianFloat result = message.getData(CartesianFloat.class);
+                                                    float x = result.x();
+                                                    int x_int = (int) (x * 1000);
+                                                    float y = result.y();
+                                                    int y_int = (int) (y * 1000);
+                                                    float z = result.z();
+                                                    int z_int = (int) (z * 1000);
+                                                    writeLog(TS, subject, label, devicename, sampleFreq, x_int, y_int, z_int);
+                                                }
                                             }
                                         });
                                     }
