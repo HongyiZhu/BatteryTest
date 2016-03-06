@@ -6,7 +6,6 @@ package com.example.hongyi.foregroundtest;
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -18,22 +17,16 @@ import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.AsyncTask;
-import android.os.Handler;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.mbientlab.metawear.AsyncOperation;
 import com.mbientlab.metawear.Message;
@@ -43,31 +36,18 @@ import com.mbientlab.metawear.RouteManager;
 import com.mbientlab.metawear.UnsupportedModuleException;
 import com.mbientlab.metawear.data.CartesianFloat;
 import com.mbientlab.metawear.module.Accelerometer;
-import com.mbientlab.metawear.module.Bmi160Accelerometer;
-import com.mbientlab.metawear.module.MultiChannelTemperature;
-import com.mbientlab.metawear.module.Timer;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.lang.Math;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 public class ForegroundService extends Service implements ServiceConnection{
@@ -121,11 +101,12 @@ public class ForegroundService extends Service implements ServiceConnection{
         }
     }
 
-    private void writeLog(long TS, String sbj, String label, String devicename, int x, int y, int z) {
+    private void writeLog(long TS, String sbj, String label, String devicename, float sampleFreq, int x, int y, int z) {
 
         try {
             String s = String.valueOf(TS) + "," + sbj + "," + label + "," + devicename + "," +
-                    String.valueOf(x) + "," + String.valueOf(y) + "," + String.valueOf(z);
+                    String.valueOf(sampleFreq) + "," + String.valueOf(x) + "," +
+                    String.valueOf(y) + "," + String.valueOf(z);
             bw.write(s);
             bw.newLine();
             bw.flush();
@@ -443,7 +424,7 @@ public class ForegroundService extends Service implements ServiceConnection{
                                                 int y_int = (int) (y * 1000);
                                                 float z = result.z();
                                                 int z_int = (int) (z * 1000);
-                                                writeLog(TS, subject, label, devicename, x_int, y_int, z_int);
+                                                writeLog(TS, subject, label, devicename, sampleFreq, x_int, y_int, z_int);
                                             }
                                         });
                                     }
