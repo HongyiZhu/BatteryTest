@@ -36,6 +36,7 @@ import com.mbientlab.metawear.RouteManager;
 import com.mbientlab.metawear.UnsupportedModuleException;
 import com.mbientlab.metawear.data.CartesianFloat;
 import com.mbientlab.metawear.module.Accelerometer;
+import com.mbientlab.metawear.module.Bmi160Accelerometer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -103,15 +104,13 @@ public class ForegroundService extends Service implements ServiceConnection{
     }
 
     private void writeLog(long TS, String sbj, String label, String devicename, float sampleFreq, int x, int y, int z) {
-
+        String s = String.valueOf(TS) + "," + sbj + "," + label + "," + devicename + "," +
+                String.valueOf(sampleFreq) + "," + String.valueOf(x) + "," +
+                String.valueOf(y) + "," + String.valueOf(z) + "\n";
         try {
-            String s = String.valueOf(TS) + "," + sbj + "," + label + "," + devicename + "," +
-                    String.valueOf(sampleFreq) + "," + String.valueOf(x) + "," +
-                    String.valueOf(y) + "," + String.valueOf(z);
             bw.write(s);
-            bw.newLine();
             bw.flush();
-            Log.i("data",s);
+//            Log.i("data",s);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -148,8 +147,7 @@ public class ForegroundService extends Service implements ServiceConnection{
                     e.printStackTrace();
                 }
             }
-        } else if (intent.getAction().equals(
-                Constants.ACTION.STOPFOREGROUND_ACTION)) {
+        } else if (intent.getAction().equals(Constants.ACTION.STOPFOREGROUND_ACTION)) {
             Log.i(LOG_TAG, "Received Stop Foreground Intent");
             stopForeground(true);
             stopSelf();
@@ -365,11 +363,12 @@ public class ForegroundService extends Service implements ServiceConnection{
     public class BoardObject {
         private final String CONNECTED = "Connected. Streaming Data",
                 DISCONNECTED = "Lost connection. Reconnecting",
+                ACT_DISCONNECT = "Successfully disconnected",
                 FAILURE = "Connection error. Reconnecting",
                 CONNECTING = "Connecting",
                 LOG_TAG = "Board_Log";
         public MetaWearBoard board;
-        public Accelerometer accel_module;
+        public Bmi160Accelerometer accel_module;
         public String MAC_ADDRESS;
         private float sampleFreq;
         private float sampleInterval;
@@ -378,6 +377,7 @@ public class ForegroundService extends Service implements ServiceConnection{
         public String sensor_status;
         private String subject = "null";
         private String label = "0";
+        private Bmi160Accelerometer.OutputDataRate rate;
 
         public void setSubject(String subject) {
             this.subject = subject;
@@ -402,16 +402,27 @@ public class ForegroundService extends Service implements ServiceConnection{
             this.devicename = MAC_ADDRESS.replace(":", "");
             this.sensor_status = CONNECTING;
             final String SENSOR_DATA_LOG = "Data:Sensor:" + MAC_ADDRESS;
+            if (freq == 12.5f) {
+                rate = Bmi160Accelerometer.OutputDataRate.ODR_12_5_HZ;
+            } else if (freq == 25f) {
+                rate = Bmi160Accelerometer.OutputDataRate.ODR_25_HZ;
+            } else if (freq == 6.25f) {
+                rate = Bmi160Accelerometer.OutputDataRate.ODR_6_25_HZ;
+            } else if (freq == 3.125f) {
+                rate = Bmi160Accelerometer.OutputDataRate.ODR_3_125_HZ;
+            }
 
             this.board.setConnectionStateHandler(new MetaWearBoard.ConnectionStateHandler() {
                 @Override
                 public void connected() {
+                    ActiveDisconnect = false;
                     sensor_status = CONNECTED;
                     connected_count += 1;
                     broadcastStatus();
                     try {
-                        accel_module = board.getModule(Accelerometer.class);
-                        accel_module.setOutputDataRate(sampleFreq);
+                        accel_module = board.getModule(Bmi160Accelerometer.class);
+//                        accel_module.setOutputDataRate(sampleFreq);
+                        accel_module.configureAxisSampling().setOutputDataRate(rate).setFullScaleRange(Bmi160Accelerometer.AccRange.AR_4G).commit();
                         accel_module.routeData().fromAxes().stream(SENSOR_DATA_LOG).commit()
                                 .onComplete(new AsyncOperation.CompletionHandler<RouteManager>() {
                                     @Override
@@ -447,6 +458,9 @@ public class ForegroundService extends Service implements ServiceConnection{
                         sensor_status = DISCONNECTED;
                         broadcastStatus();
                         board.connect();
+                    } else {
+                        sensor_status = ACT_DISCONNECT;
+                        broadcastStatus();
                     }
                 }
 

@@ -181,7 +181,7 @@
         android:layout_alignLeft="@+id/btn_connect">
 
         <RadioButton
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="12.5"
             android:id="@+id/Hz1"
@@ -189,25 +189,24 @@
             android:layout_weight="1" />
 
         <RadioButton
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="25"
             android:id="@+id/Hz2"
-            android:checked="false"
-            android:layout_weight="1" />
+            android:checked="false" />
 
         <RadioButton
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="50"
+            android:text="6.25"
             android:id="@+id/Hz3"
             android:checked="false"
             android:layout_weight="1" />
 
         <RadioButton
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="100"
+            android:text="3.125"
             android:id="@+id/Hz4"
             android:checked="false"
             android:layout_weight="1" />
